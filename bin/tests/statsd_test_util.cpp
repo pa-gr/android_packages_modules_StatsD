@@ -445,6 +445,38 @@ FieldMatcher CreateAttributionUidAndOtherDimensions(const int atomId,
     return dimensions;
 }
 
+CountMetric createCountMetric(string name, int64_t what, optional<int64_t> condition,
+                              vector<int64_t> states) {
+    CountMetric metric;
+    metric.set_id(StringToId(name));
+    metric.set_what(what);
+    metric.set_bucket(TEN_MINUTES);
+    if (condition) {
+        metric.set_condition(condition.value());
+    }
+    for (const int64_t state : states) {
+        metric.add_slice_by_state(state);
+    }
+    return metric;
+}
+
+GaugeMetric createGaugeMetric(string name, int64_t what, GaugeMetric::SamplingType samplingType,
+                              optional<int64_t> condition, optional<int64_t> triggerEvent) {
+    GaugeMetric metric;
+    metric.set_id(StringToId(name));
+    metric.set_what(what);
+    metric.set_bucket(TEN_MINUTES);
+    metric.set_sampling_type(samplingType);
+    if (condition) {
+        metric.set_condition(condition.value());
+    }
+    if (triggerEvent) {
+        metric.set_trigger_event(triggerEvent.value());
+    }
+    metric.mutable_gauge_fields_filter()->set_include_all(true);
+    return metric;
+}
+
 // START: get primary key functions
 void getUidProcessKey(int uid, HashableDimensionKey* key) {
     int pos1[] = {1, 0, 0};
@@ -962,6 +994,27 @@ std::unique_ptr<LogEvent> CreateOverlayStateChangedEvent(int64_t timestampNs, co
     return logEvent;
 }
 
+std::unique_ptr<LogEvent> CreateAppStartOccurredEvent(
+        uint64_t timestampNs, const int uid, const string& pkgName,
+        AppStartOccurred::TransitionType type, const string& activityName,
+        const string& callingPkgName, const bool isInstantApp, int64_t activityStartMs) {
+    AStatsEvent* statsEvent = AStatsEvent_obtain();
+    AStatsEvent_setAtomId(statsEvent, util::APP_START_OCCURRED);
+    AStatsEvent_overwriteTimestamp(statsEvent, timestampNs);
+
+    AStatsEvent_writeInt32(statsEvent, uid);
+    AStatsEvent_writeString(statsEvent, pkgName.c_str());
+    AStatsEvent_writeInt32(statsEvent, type);
+    AStatsEvent_writeString(statsEvent, activityName.c_str());
+    AStatsEvent_writeString(statsEvent, callingPkgName.c_str());
+    AStatsEvent_writeInt32(statsEvent, isInstantApp);
+    AStatsEvent_writeInt32(statsEvent, activityStartMs);
+
+    std::unique_ptr<LogEvent> logEvent = std::make_unique<LogEvent>(/*uid=*/0, /*pid=*/0);
+    parseStatsEventToLogEvent(statsEvent, logEvent.get());
+    return logEvent;
+}
+
 sp<StatsLogProcessor> CreateStatsLogProcessor(const int64_t timeBaseNs, const int64_t currentTimeNs,
                                               const StatsdConfig& config, const ConfigKey& key,
                                               const shared_ptr<IPullAtomCallback>& puller,
@@ -1010,6 +1063,13 @@ sp<EventMatcherWizard> createEventMatcherWizard(
     int64_t matcherId = 678;
     return new EventMatcherWizard({new SimpleAtomMatchingTracker(
             matcherId, matcherIndex, matcherHash, atomMatcher, uidMap)});
+}
+
+void ValidateUidDimension(const DimensionsValue& value, int atomId, int uid) {
+    EXPECT_EQ(value.field(), atomId);
+    ASSERT_EQ(value.value_tuple().dimensions_value_size(), 1);
+    EXPECT_EQ(value.value_tuple().dimensions_value(0).field(), 1);
+    EXPECT_EQ(value.value_tuple().dimensions_value(0).value_int(), uid);
 }
 
 void ValidateWakelockAttributionUidAndTagDimension(const DimensionsValue& value, const int atomId,
@@ -1106,6 +1166,24 @@ void ValidateStateValue(const google::protobuf::RepeatedPtrField<StateValue>& st
             FAIL() << "State value should have either a value or a group id";
     }
 }
+
+void ValidateCountBucket(const CountBucketInfo& countBucket, int64_t startTimeNs, int64_t endTimeNs,
+                         int64_t count) {
+    EXPECT_EQ(countBucket.start_bucket_elapsed_nanos(), startTimeNs);
+    EXPECT_EQ(countBucket.end_bucket_elapsed_nanos(), endTimeNs);
+    EXPECT_EQ(countBucket.count(), count);
+}
+
+void ValidateGaugeBucketTimes(const GaugeBucketInfo& gaugeBucket, int64_t startTimeNs,
+                              int64_t endTimeNs, vector<int64_t> eventTimesNs) {
+    EXPECT_EQ(gaugeBucket.start_bucket_elapsed_nanos(), startTimeNs);
+    EXPECT_EQ(gaugeBucket.end_bucket_elapsed_nanos(), endTimeNs);
+    EXPECT_EQ(gaugeBucket.elapsed_timestamp_nanos_size(), eventTimesNs.size());
+    for (int i = 0; i < eventTimesNs.size(); i++) {
+        EXPECT_EQ(gaugeBucket.elapsed_timestamp_nanos(i), eventTimesNs[i]);
+    }
+}
+
 bool EqualsTo(const DimensionsValue& s1, const DimensionsValue& s2) {
     if (s1.field() != s2.field()) {
         return false;
@@ -1403,7 +1481,7 @@ Status FakeSubsystemSleepCallback::onPullAtom(int atomTag,
         AStatsEvent_writeString(event, subsystemName.c_str());
         AStatsEvent_writeString(event, "subsystem_subname foo");
         AStatsEvent_writeInt64(event, /*count= */ i);
-        AStatsEvent_writeInt64(event, /*time_millis= */ i * 100);
+        AStatsEvent_writeInt64(event, /*time_millis= */ pullNum * pullNum * 100 + i);
         AStatsEvent_build(event);
         size_t size;
         uint8_t* buffer = AStatsEvent_getBuffer(event, &size);
@@ -1415,6 +1493,7 @@ Status FakeSubsystemSleepCallback::onPullAtom(int atomTag,
         parcels.push_back(std::move(p));
         AStatsEvent_release(event);
     }
+    pullNum++;
     resultReceiver->pullFinished(atomTag, /*success=*/true, parcels);
     return Status::ok();
 }
