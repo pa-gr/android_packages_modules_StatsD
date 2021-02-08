@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 apex {
     name: "com.android.os.statsd",
     defaults: ["com.android.os.statsd-defaults"],
@@ -60,3 +64,15 @@ prebuilt_etc {
     installable: false,
 }
 
+// ==========================================================
+// Make stats-log-api-gen available to unbundled modules
+// ==========================================================
+module_exports {
+    name: "stats-log-api-gen-exports",
+    host_supported: true,
+    device_supported: false,
+    compile_multilib: "64",
+    native_binaries: [
+        "stats-log-api-gen",
+    ],
+}

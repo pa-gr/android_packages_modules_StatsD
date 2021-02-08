@@ -17,6 +17,10 @@
 // =========================================================================
 // Native library to write stats log to statsd socket on Android R and later
 // =========================================================================
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 cc_defaults {
     name: "libstatssocket_defaults",
     srcs: [
@@ -110,7 +114,7 @@ cc_test {
         "libcutils",
         "libutils",
     ],
-    test_suites: ["device-tests", "mts"],
+    test_suites: ["device-tests", "mts-statsd"],
     test_config: "libstatssocket_test.xml",
     //TODO(b/153588990): Remove when the build system properly separates.
     //32bit and 64bit architectures.
