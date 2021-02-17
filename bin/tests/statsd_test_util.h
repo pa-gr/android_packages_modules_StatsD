@@ -192,6 +192,12 @@ FieldMatcher CreateAttributionUidAndOtherDimensions(const int atomId,
                                                     const std::vector<Position>& positions,
                                                     const std::vector<int>& fields);
 
+CountMetric createCountMetric(string name, int64_t what, optional<int64_t> condition,
+                              vector<int64_t> states);
+
+GaugeMetric createGaugeMetric(string name, int64_t what, GaugeMetric::SamplingType samplingType,
+                              optional<int64_t> condition, optional<int64_t> triggerEvent);
+
 // START: get primary key functions
 // These functions take in atom field information and create FieldValues which are stored in the
 // given HashableDimensionKey.
@@ -324,6 +330,11 @@ std::unique_ptr<LogEvent> CreateOverlayStateChangedEvent(int64_t timestampNs, co
                                                          const bool usingAlertWindow,
                                                          const OverlayStateChanged::State state);
 
+std::unique_ptr<LogEvent> CreateAppStartOccurredEvent(
+        uint64_t timestampNs, const int uid, const string& pkg_name,
+        AppStartOccurred::TransitionType type, const string& activity_name,
+        const string& calling_pkg_name, const bool is_instant_app, int64_t activity_start_msec);
+
 // Create a statsd log event processor upon the start time in seconds, config and key.
 sp<StatsLogProcessor> CreateStatsLogProcessor(const int64_t timeBaseNs, const int64_t currentTimeNs,
                                               const StatsdConfig& config, const ConfigKey& key,
@@ -339,6 +350,7 @@ int64_t StringToId(const string& str);
 sp<EventMatcherWizard> createEventMatcherWizard(
         int tagId, int matcherIndex, const std::vector<FieldValueMatcher>& fieldValueMatchers = {});
 
+void ValidateUidDimension(const DimensionsValue& value, int atomId, int uid);
 void ValidateWakelockAttributionUidAndTagDimension(const DimensionsValue& value, const int atomId,
                                                    const int uid, const string& tag);
 void ValidateUidDimension(const DimensionsValue& value, int node_idx, int atomId, int uid);
@@ -349,6 +361,11 @@ void ValidateAttributionUidAndTagDimension(
     const DimensionsValue& value, int node_idx, int atomId, int uid, const std::string& tag);
 void ValidateStateValue(const google::protobuf::RepeatedPtrField<StateValue>& stateValues,
                         int atomId, int64_t value);
+
+void ValidateCountBucket(const CountBucketInfo& countBucket, int64_t startTimeNs, int64_t endTimeNs,
+                         int64_t count);
+void ValidateGaugeBucketTimes(const GaugeBucketInfo& gaugeBucket, int64_t startTimeNs,
+                              int64_t endTimeNs, vector<int64_t> eventTimesNs);
 
 struct DimensionsPair {
     DimensionsPair(DimensionsValue m1, google::protobuf::RepeatedPtrField<StateValue> m2)
@@ -392,6 +409,8 @@ bool backfillDimensionPath(const DimensionsValue& path,
 
 class FakeSubsystemSleepCallback : public BnPullAtomCallback {
 public:
+    // Track the number of pulls.
+    int pullNum = 1;
     Status onPullAtom(int atomTag,
                       const shared_ptr<IPullAtomResultReceiver>& resultReceiver) override;
 };
