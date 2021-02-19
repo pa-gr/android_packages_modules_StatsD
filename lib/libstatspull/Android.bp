@@ -17,6 +17,10 @@
 // ==========================================================
 // Native library to register a pull atom callback with statsd
 // ==========================================================
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 cc_defaults {
     name: "libstatspull_defaults",
     srcs: [
@@ -109,7 +113,7 @@ cc_test {
         "libstatspull",
         "libstatssocket",
     ],
-    test_suites: ["general-tests", "mts"],
+    test_suites: ["general-tests", "mts-statsd"],
     test_config: "libstatspull_test.xml",
 
     //TODO(b/153588990): Remove when the build system properly separates 
