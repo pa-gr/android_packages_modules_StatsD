@@ -128,32 +128,6 @@ EventMetric createEventMetric(string name, int64_t what, optional<int64_t> condi
     }
     return metric;
 }
-
-Alert createAlert(string name, int64_t metricId, int buckets, int64_t triggerSum) {
-    Alert alert;
-    alert.set_id(StringToId(name));
-    alert.set_metric_id(metricId);
-    alert.set_num_buckets(buckets);
-    alert.set_trigger_if_sum_gt(triggerSum);
-    return alert;
-}
-
-Subscription createSubscription(string name, Subscription_RuleType type, int64_t ruleId) {
-    Subscription subscription;
-    subscription.set_id(StringToId(name));
-    subscription.set_rule_type(type);
-    subscription.set_rule_id(ruleId);
-    subscription.mutable_broadcast_subscriber_details();
-    return subscription;
-}
-
-Alarm createAlarm(string name, int64_t offsetMillis, int64_t periodMillis) {
-    Alarm alarm;
-    alarm.set_id(StringToId(name));
-    alarm.set_offset_millis(offsetMillis);
-    alarm.set_period_millis(periodMillis);
-    return alarm;
-}
 }  // anonymous namespace
 
 TEST_F(ConfigUpdateTest, TestSimpleMatcherPreserve) {
@@ -3405,8 +3379,9 @@ TEST_F(ConfigUpdateTest, TestUpdateAlerts) {
     unordered_map<int, vector<int>> deactivationAtomTrackerToMetricMap;
     vector<int> metricsWithActivation;
     set<int64_t> replacedMetrics;
+    int64_t currentTimeNs = 12345;
     EXPECT_TRUE(updateMetrics(
-            key, config, /*timeBaseNs=*/123, /*currentTimeNs=*/12345, new StatsPullerManager(),
+            key, config, /*timeBaseNs=*/123, currentTimeNs, new StatsPullerManager(),
             oldAtomMatchingTrackerMap, oldAtomMatchingTrackerMap, /*replacedMatchers*/ {},
             oldAtomMatchingTrackers, oldConditionTrackerMap, /*replacedConditions=*/{},
             oldConditionTrackers, {ConditionState::kUnknown}, /*stateAtomIdMap*/ {},
@@ -3420,9 +3395,9 @@ TEST_F(ConfigUpdateTest, TestUpdateAlerts) {
 
     unordered_map<int64_t, int> newAlertTrackerMap;
     vector<sp<AnomalyTracker>> newAnomalyTrackers;
-    EXPECT_TRUE(updateAlerts(config, newMetricProducerMap, replacedMetrics, oldAlertTrackerMap,
-                             oldAnomalyTrackers, anomalyAlarmMonitor, newMetricProducers,
-                             newAlertTrackerMap, newAnomalyTrackers));
+    EXPECT_TRUE(updateAlerts(config, currentTimeNs, newMetricProducerMap, replacedMetrics,
+                             oldAlertTrackerMap, oldAnomalyTrackers, anomalyAlarmMonitor,
+                             newMetricProducers, newAlertTrackerMap, newAnomalyTrackers));
 
     unordered_map<int64_t, int> expectedAlertMap = {
             {alert1Id, alert1Index},

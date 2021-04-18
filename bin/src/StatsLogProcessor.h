@@ -48,7 +48,7 @@ public:
     void OnLogEvent(LogEvent* event);
 
     void OnConfigUpdated(const int64_t timestampNs, const ConfigKey& key,
-                         const StatsdConfig& config);
+                         const StatsdConfig& config, bool modularUpdate = true);
     void OnConfigRemoved(const ConfigKey& key);
 
     size_t GetMetricsSize(const ConfigKey& key) const;
@@ -327,6 +327,7 @@ private:
     FRIEND_TEST(AnomalyDetectionE2eTest, TestCountMetric_save_refractory_to_disk);
     FRIEND_TEST(AnomalyDetectionE2eTest, TestCountMetric_load_refractory_from_disk);
     FRIEND_TEST(AnomalyDetectionE2eTest, TestDurationMetric_SUM_single_bucket);
+    FRIEND_TEST(AnomalyDetectionE2eTest, TestDurationMetric_SUM_partial_bucket);
     FRIEND_TEST(AnomalyDetectionE2eTest, TestDurationMetric_SUM_multiple_buckets);
     FRIEND_TEST(AnomalyDetectionE2eTest, TestDurationMetric_SUM_long_refractory_period);
 
@@ -338,8 +339,10 @@ private:
     FRIEND_TEST(MetricActivationE2eTest, TestCountMetricWithSameDeactivation);
     FRIEND_TEST(MetricActivationE2eTest, TestCountMetricWithTwoMetricsTwoDeactivations);
 
+    FRIEND_TEST(ConfigUpdateE2eTest, TestAlarms);
     FRIEND_TEST(ConfigUpdateE2eTest, TestGaugeMetric);
     FRIEND_TEST(ConfigUpdateE2eTest, TestValueMetric);
+    FRIEND_TEST(ConfigUpdateE2eTest, TestAnomalyDurationMetric);
     FRIEND_TEST(ConfigUpdateE2eAbTest, TestHashStrings);
     FRIEND_TEST(ConfigUpdateE2eAbTest, TestUidMapVersionStringInstaller);
     FRIEND_TEST(ConfigUpdateE2eAbTest, TestConfigTtl);
