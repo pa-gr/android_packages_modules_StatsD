@@ -103,7 +103,6 @@ cc_library_static {
         "-DLIB_STATS_PULL_TESTS_FLAG",
     ],
     visibility: [
-        "//frameworks/base/apex/statsd/tests/libstatspull",
         "//packages/modules/StatsD/apex/tests/libstatspull",
     ],
 }
@@ -142,31 +141,4 @@ cc_test {
         "-Wno-unused-parameter",
     ],
     require_root: true,
-}
-
-// =============
-// Rust bindings
-// =============
-
-rust_bindgen {
-    name: "libstatspull_bindgen",
-    wrapper_src: "rust/statslog.h",
-    crate_name: "statspull_bindgen",
-    source_stem: "bindings",
-    local_include_dirs: ["include"],
-    bindgen_flags: [
-        "--size_t-is-usize",
-        "--whitelist-function=AStatsEventList_addStatsEvent",
-        "--whitelist-function=AStatsEvent_.*",
-        "--whitelist-function=AStatsManager_.*",
-        "--whitelist-var=AStatsManager_.*",
-    ],
-    target: {
-        android: {
-            shared_libs: ["libstatssocket"],
-        },
-        host: {
-            static_libs: ["libstatssocket"],
-        },
-    },
 }
