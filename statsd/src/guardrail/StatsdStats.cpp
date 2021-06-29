@@ -459,12 +459,9 @@ void StatsdStats::notePullExceedMaxDelay(int pullAtomId) {
 void StatsdStats::noteAtomLogged(int atomId, int32_t timeSec) {
     lock_guard<std::mutex> lock(mLock);
 
-    if (atomId >= 0 && atomId <= kMaxPushedAtomId) {
+    if (atomId <= kMaxPushedAtomId) {
         mPushedAtomStats[atomId]++;
     } else {
-        if (atomId < 0) {
-            android_errorWriteLog(0x534e4554, "187957589");
-        }
         if (mNonPlatformPushedAtomStats.size() < kMaxNonPlatformPushedAtoms) {
             mNonPlatformPushedAtomStats[atomId]++;
         }
@@ -522,6 +519,15 @@ void StatsdStats::noteHardDimensionLimitReached(int64_t metricId) {
 void StatsdStats::noteLateLogEventSkipped(int64_t metricId) {
     lock_guard<std::mutex> lock(mLock);
     getAtomMetricStats(metricId).lateLogEventSkipped++;
+}
+
+void StatsdStats::noteLateLogEvent(int64_t metricId, int64_t extraDurationNs) {
+    lock_guard<std::mutex> lock(mLock);
+    AtomMetricStats& metricStats = getAtomMetricStats(metricId);
+    metricStats.lateLogEvent++;
+    metricStats.sumLateLogEventExtraDurationNs += extraDurationNs;
+    metricStats.maxLateLogEventExtraDurationNs =
+            std::max(metricStats.maxLateLogEventExtraDurationNs, extraDurationNs);
 }
 
 void StatsdStats::noteSkippedForwardBuckets(int64_t metricId) {

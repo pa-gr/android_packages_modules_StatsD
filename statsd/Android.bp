@@ -92,7 +92,6 @@ cc_defaults {
     static_libs: [
         "libbase",
         "libcutils",
-        "libmodules-utils-build",
         "libprotoutil",
         "libstatslog_statsd",
         "libsysutils",

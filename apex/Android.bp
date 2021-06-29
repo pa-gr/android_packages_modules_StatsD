@@ -23,7 +23,6 @@ apex {
 }
 
 apex_defaults {
-    bootclasspath_fragments: ["com.android.os.statsd-bootclasspath-fragment"],
     jni_libs: [
         "libstats_jni",
     ],
@@ -33,13 +32,11 @@ apex_defaults {
     ],
     binaries: ["statsd"],
     java_libs: [
+        "framework-statsd",
         "service-statsd",
     ],
     compile_multilib: "both",
-    prebuilts: [
-        "com.android.os.statsd.init.rc",
-        "current_sdkinfo",
-    ],
+    prebuilts: ["com.android.os.statsd.init.rc"],
     name: "com.android.os.statsd-defaults",
     updatable: true,
     min_sdk_version: "30",
@@ -72,7 +69,9 @@ prebuilt_etc {
 // ==========================================================
 sdk {
     name: "statsd-module-sdk",
-    bootclasspath_fragments: ["com.android.os.statsd-bootclasspath-fragment"],
+    java_sdk_libs: [
+        "framework-statsd",
+    ],
     native_shared_libs: [
         "libstatssocket",
     ],
@@ -86,11 +85,4 @@ sdk {
     native_shared_libs: [
         "libstatssocket",
     ],
-}
-
-// Encapsulate the contributions made by the com.android.os.statsd to the bootclasspath.
-bootclasspath_fragment {
-    name: "com.android.os.statsd-bootclasspath-fragment",
-    contents: ["framework-statsd"],
-    apex_available: ["com.android.os.statsd"],
 }

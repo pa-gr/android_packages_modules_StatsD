@@ -16,7 +16,6 @@
 
 #include "flags.h"
 
-#include <android-modules-utils/sdk_level.h>
 #include <server_configurable_flags/get_flags.h>
 
 using server_configurable_flags::GetServerConfigurableFlag;
@@ -27,9 +26,6 @@ namespace os {
 namespace statsd {
 
 string getFlagString(const string& flagName, const string& defaultValue) {
-    if (!android::modules::sdklevel::IsAtLeastS()) {
-        return defaultValue;
-    }
     return GetServerConfigurableFlag(STATSD_NATIVE_NAMESPACE, flagName, defaultValue);
 }
 
